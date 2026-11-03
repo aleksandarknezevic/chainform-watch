@@ -1,7 +1,9 @@
 # Uniswap — Ethereum mainnet
 #
-# Who owns the V3 Factory. The owner can enable new fee tiers and turn on the
-# protocol fee switch; it is expected to be the Uniswap governance timelock.
+# Who owns the V3 Factory. The owner can enable new fee tiers and set protocol
+# fees. It used to be the Uniswap governance timelock
+# (0x1a9C8182C09F50C8318d769245beA52c32BE35BC); the new owner below was first
+# seen by this repo on 2026-11-03 (the change itself happened earlier).
 #
 # `owner` has a setter (setOwner), but it lives in `expect` on purpose: this
 # repo watches, it never proposes calls.
@@ -22,6 +24,8 @@ resource "contract" "v3Factory" {
   abi     = "abis/uniswap-v3-factory.abi.json"
 
   expect {
-    owner = "0x1a9C8182C09F50C8318d769245beA52c32BE35BC" # Uniswap governance timelock
+    # TODO: name this contract and link the governance proposal / OwnerChanged tx.
+    # https://etherscan.io/address/0xf2371551Fe3937Db7c750f4DfABe5c2fFFdcBf5A
+    owner = "0xf2371551Fe3937Db7c750f4DfABe5c2fFFdcBf5A"
   }
 }

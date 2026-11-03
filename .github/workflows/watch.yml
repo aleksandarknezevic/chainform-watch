@@ -1,16 +1,24 @@
 # Runs `chainform plan` for every config under watch/ and turns on-chain drift
-# into GitHub issues.
+# into GitHub issues and pull requests.
 #
 #   schedule / push / manual run:
-#     drift     -> open an issue "Drift: <file>" (or comment if the plan changed)
-#     no drift  -> close that issue if one is open
+#     drift     -> open an issue "Drift: <file>" (comment only if the drift changes)
+#                  and a PR from drift/<name> that rewrites the expected values
+#                  to the on-chain ones; merging the PR acknowledges the change
+#     no drift  -> close the issue and any open drift PR for that file
 #   pull_request:
-#     the job fails on drift, so a PR that updates expected values must match
-#     the live chain before it can merge
+#     the job fails on drift, so nothing that disagrees with the chain - a stale
+#     baseline, a typo - can merge
 #
 # Nothing is signed or sent: `plan` only performs eth_call reads.
 #
-# Requires a repository secret RPC_URL (Ethereum mainnet JSON-RPC endpoint).
+# Secrets:
+#   RPC_URL      (required) Ethereum mainnet JSON-RPC endpoint
+#   WATCH_TOKEN  (optional) fine-grained PAT with contents, issues and pull
+#                requests write. PRs opened with the default GITHUB_TOKEN do not
+#                trigger workflows, so the PR check would not run on drift PRs.
+#                Without it, enable "Allow GitHub Actions to create and approve
+#                pull requests" in Settings -> Actions -> General.
 
 name: watch
 
@@ -54,15 +62,21 @@ jobs:
     needs: discover
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       issues: write
+      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
         file: ${{ fromJSON(needs.discover.outputs.files) }}
+    env:
+      FILE: ${{ matrix.file }}
+      GH_TOKEN: ${{ secrets.WATCH_TOKEN || github.token }}
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.WATCH_TOKEN || github.token }}
 
       - name: chainform plan
         id: plan
@@ -71,14 +85,14 @@ jobs:
           file: ${{ matrix.file }}
           rpc-url: ${{ secrets.RPC_URL }}
           version: ${{ env.CHAINFORM_VERSION }}
-          # Outside PRs drift is reported as an issue, not a red build.
+          json: "true"
+          # Outside PRs drift is reported as an issue + PR, not a red build.
           fail-on-drift: ${{ github.event_name == 'pull_request' }}
 
       - name: Open or update drift issue
+        id: issue
         if: github.event_name != 'pull_request' && steps.plan.outputs.drift == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
-          FILE: ${{ matrix.file }}
           PLAN_FILE: ${{ steps.plan.outputs.plan-file }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
@@ -94,12 +108,12 @@ jobs:
             cat "$PLAN_FILE"
             echo '```'
             echo
-            echo "Detected by [run ${GITHUB_RUN_ID}](${RUN_URL})."
+            echo "Detected by [run ${GITHUB_RUN_ID}](${RUN_URL}). The change happened at or before this run - check the contract's transactions/events for the exact time."
             echo
-            echo "If the change is legitimate, open a PR updating the expected value in \`${FILE}\` (link the governance proposal or transaction). Merging it closes this issue."
+            echo "A PR updating \`${FILE}\` to the on-chain values is opened automatically. Verify the change is legitimate, describe it and link the proposal or transaction in the PR, then merge it to close this issue."
             echo
             echo "<!-- plan-sha: ${sha} -->"
-          } > body.md
+          } > "$RUNNER_TEMP/issue.md"
 
           gh label create drift --color B60205 --description "On-chain state differs from config" 2>/dev/null || true
 
@@ -107,23 +121,105 @@ jobs:
             --jq "map(select(.title == \"${title}\")) | .[0].number // empty")
 
           if [ -z "$number" ]; then
-            gh issue create --title "$title" --label drift --body-file body.md
+            url=$(gh issue create --title "$title" --label drift --body-file "$RUNNER_TEMP/issue.md")
+            number=${url##*/}
           elif gh issue view "$number" --json body,comments --jq '.body, .comments[].body' | grep -q "plan-sha: ${sha}"; then
             echo "Issue #${number} already reports this plan."
           else
-            gh issue comment "$number" --body-file body.md
+            gh issue comment "$number" --body-file "$RUNNER_TEMP/issue.md"
+          fi
+          echo "number=${number}" >> "$GITHUB_OUTPUT"
+
+      - name: Open or update drift PR
+        if: steps.issue.outcome == 'success'
+        env:
+          PLAN_JSON: ${{ steps.plan.outputs.plan-json-file }}
+          ISSUE: ${{ steps.issue.outputs.number }}
+          BASE: ${{ github.event.repository.default_branch }}
+        run: |
+          set -uo pipefail
+          branch="drift/$(basename "$FILE" .hcl)"
+
+          python3 scripts/rebaseline.py --file "$FILE" --plan "$PLAN_JSON" --summary "$RUNNER_TEMP/changes.md"
+          rewrite=$?
+          if [ "$rewrite" -eq 2 ]; then
+            exit 2
           fi
 
-      - name: Close resolved drift issue
+          # The rewritten file must match the chain, or the PR is only a draft.
+          verified=true
+          chainform plan -f "$FILE" > "$RUNNER_TEMP/verify.txt" || verified=false
+
+          set -e
+          if git fetch --quiet origin "$branch" 2>/dev/null \
+             && git show "FETCH_HEAD:${FILE}" | cmp -s - "$FILE"; then
+            echo "${branch} already carries these values."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git switch -c "$branch"
+            git add "$FILE"
+            git commit -m "Acknowledge drift in ${FILE}" -m "Closes #${ISSUE}"
+            git push --force origin "$branch"
+          fi
+
+          {
+            echo "Updates \`${FILE}\` to the values currently on chain. Closes #${ISSUE}."
+            echo
+            cat "$RUNNER_TEMP/changes.md"
+            echo
+            if [ "$verified" = true ]; then
+              echo "Re-running \`chainform plan\` on the updated file: **no drift**."
+            else
+              echo "**The updated file still drifts** - finish it by hand:"
+              echo
+              echo '```'
+              cat "$RUNNER_TEMP/verify.txt"
+              echo '```'
+            fi
+            echo
+            echo "### Before merging"
+            echo
+            echo "- [ ] The change is legitimate: it came from the expected owner/governance (find the transaction or event on the explorer)."
+            echo "- [ ] Each \`TODO\` comment is replaced with what the new value is and a link to the proposal or transaction."
+          } > "$RUNNER_TEMP/pr.md"
+
+          pr=$(gh pr list --head "$branch" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$pr" ]; then
+            gh pr edit "$pr" --body-file "$RUNNER_TEMP/pr.md"
+          else
+            draft=()
+            if [ "$verified" != true ] || [ "$rewrite" -ne 0 ]; then
+              draft=(--draft)
+            fi
+            gh pr create --base "$BASE" --head "$branch" "${draft[@]}" \
+              --title "Acknowledge drift: ${FILE}" --label drift --body-file "$RUNNER_TEMP/pr.md"
+          fi
+
+      - name: Close resolved drift issue and PR
         if: github.event_name != 'pull_request' && steps.plan.outputs.drift == 'false'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FILE: ${{ matrix.file }}
         run: |
           set -euo pipefail
           title="Drift: ${FILE}"
+          branch="drift/$(basename "$FILE" .hcl)"
           number=$(gh issue list --state open --label drift --limit 100 --json number,title \
             --jq "map(select(.title == \"${title}\")) | .[0].number // empty" 2>/dev/null || true)
           if [ -n "$number" ]; then
             gh issue close "$number" --comment "\`${FILE}\` matches the chain again (${GITHUB_SHA::7})."
           fi
+          # A drift PR still open here means the chain went back on its own.
+          pr=$(gh pr list --head "$branch" --state open --json number --jq '.[0].number // empty' 2>/dev/null || true)
+          if [ -n "$pr" ]; then
+            gh pr close "$pr" --delete-branch --comment "\`${FILE}\` matches the chain again without this change."
+          fi
+
+  # One stable check name for branch protection, however many files are watched.
+  result:
+    name: watch result
+    needs: plan
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          RESULT: ${{ needs.plan.result }}
+        run: test "$RESULT" = success

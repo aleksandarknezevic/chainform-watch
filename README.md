@@ -23,9 +23,10 @@ state. It performs **read-only `eth_call`s only**. No keys, no transactions.
 
 ```
 watch/*.hcl  ──hourly──▶  chainform plan  ──drift──▶  issue "Drift: watch/<file>"
-     ▲                                                          │
-     └──────────── PR updates the expected value ◀──────────────┘
-                   (links the proposal / tx), merge closes the issue
+     ▲                                          └───▶  PR drift/<name> with the
+     │                                                 on-chain values
+     └──── a human verifies the change, links the source, merges ◀──┘
+           (merge closes the issue)
 ```
 
 1. Each file in [`watch/`](watch/) declares the values a contract is expected
@@ -34,10 +35,13 @@ watch/*.hcl  ──hourly──▶  chainform plan  ──drift──▶  issue 
    `chainform plan` for every file every hour, plus on every push and PR.
 3. On drift, the workflow opens an issue labeled `drift` that contains the plan.
    It comments again only if the drift changes.
-4. A legitimate change (a governance vote, a planned migration) is
-   acknowledged by a PR that updates the expected value and links the source.
-   The PR check confirms the new value matches the chain. After merge, the next
-   run closes the issue.
+4. It also opens a PR that rewrites the expected values to the on-chain ones
+   ([`scripts/rebaseline.py`](scripts/rebaseline.py)) and marks each changed
+   line with a `TODO`.
+5. A maintainer checks that the change is legitimate (a governance vote, a
+   planned migration), replaces the `TODO`s with a description and a link to the
+   source, and merges. The next run closes the issue. If the chain reverts on
+   its own, the issue and the PR are closed automatically.
 
 The result is a public, timestamped, reviewed history of parameter changes:
 the [`drift` issues](https://github.com/aleksandarknezevic/chainform-watch/issues?q=label%3Adrift)
@@ -68,9 +72,17 @@ a [release binary](https://github.com/aleksandarknezevic/chainform/releases).
 
 ## Run it yourself
 
-Fork the repo, add a repository secret `RPC_URL` (an Ethereum mainnet endpoint),
-and enable Actions. To watch your own protocol, replace `watch/` with your
-contracts. Locally:
+Fork the repo and enable Actions, then configure:
+
+| Setting | Why |
+| --- | --- |
+| Secret `RPC_URL` | Ethereum mainnet JSON-RPC endpoint (required). |
+| Secret `WATCH_TOKEN` | Fine-grained PAT (contents, issues, pull requests: write). Recommended: PRs opened with the default token do not trigger the PR check. |
+| Settings → Actions → General → *Allow GitHub Actions to create and approve pull requests* | Needed only without `WATCH_TOKEN`. |
+| Branch protection on `main`: require PRs and the `watch result` check | Configs can then only land if they match the chain, so a stale value never becomes a baseline. |
+| Settings → General → *Automatically delete head branches* | Cleans up `drift/*` branches after merge. |
+
+To watch your own protocol, replace `watch/` with your contracts. Locally:
 
 ```bash
 chainform plan -f watch/lido.hcl    # exit 0 = matches, 1 = drift, 2 = run failed
