@@ -1,0 +1,129 @@
+# Runs `chainform plan` for every config under watch/ and turns on-chain drift
+# into GitHub issues.
+#
+#   schedule / push / manual run:
+#     drift     -> open an issue "Drift: <file>" (or comment if the plan changed)
+#     no drift  -> close that issue if one is open
+#   pull_request:
+#     the job fails on drift, so a PR that updates expected values must match
+#     the live chain before it can merge
+#
+# Nothing is signed or sent: `plan` only performs eth_call reads.
+#
+# Requires a repository secret RPC_URL (Ethereum mainnet JSON-RPC endpoint).
+
+name: watch
+
+on:
+  schedule:
+    # Off the top of the hour to avoid the scheduler rush.
+    - cron: "17 * * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: watch-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CHAINFORM_VERSION: v0.0.3
+
+jobs:
+  discover:
+    name: Discover configs
+    runs-on: ubuntu-latest
+    outputs:
+      files: ${{ steps.find.outputs.files }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: find
+        run: |
+          files=$(find watch -name '*.hcl' | sort | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "files=${files}" >> "$GITHUB_OUTPUT"
+          echo "Watching: ${files}"
+
+  plan:
+    name: ${{ matrix.file }}
+    needs: discover
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    strategy:
+      fail-fast: false
+      matrix:
+        file: ${{ fromJSON(needs.discover.outputs.files) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: chainform plan
+        id: plan
+        uses: aleksandarknezevic/chainform@v0.0.3
+        with:
+          file: ${{ matrix.file }}
+          rpc-url: ${{ secrets.RPC_URL }}
+          version: ${{ env.CHAINFORM_VERSION }}
+          # Outside PRs drift is reported as an issue, not a red build.
+          fail-on-drift: ${{ github.event_name == 'pull_request' }}
+
+      - name: Open or update drift issue
+        if: github.event_name != 'pull_request' && steps.plan.outputs.drift == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FILE: ${{ matrix.file }}
+          PLAN_FILE: ${{ steps.plan.outputs.plan-file }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="Drift: ${FILE}"
+          # Hash the plan so an unchanged drift does not comment every hour.
+          sha=$(sha256sum "$PLAN_FILE" | cut -c1-16)
+
+          {
+            echo "On-chain state no longer matches \`${FILE}\`."
+            echo
+            echo '```'
+            cat "$PLAN_FILE"
+            echo '```'
+            echo
+            echo "Detected by [run ${GITHUB_RUN_ID}](${RUN_URL})."
+            echo
+            echo "If the change is legitimate, open a PR updating the expected value in \`${FILE}\` (link the governance proposal or transaction). Merging it closes this issue."
+            echo
+            echo "<!-- plan-sha: ${sha} -->"
+          } > body.md
+
+          gh label create drift --color B60205 --description "On-chain state differs from config" 2>/dev/null || true
+
+          number=$(gh issue list --state open --label drift --limit 100 --json number,title \
+            --jq "map(select(.title == \"${title}\")) | .[0].number // empty")
+
+          if [ -z "$number" ]; then
+            gh issue create --title "$title" --label drift --body-file body.md
+          elif gh issue view "$number" --json body,comments --jq '.body, .comments[].body' | grep -q "plan-sha: ${sha}"; then
+            echo "Issue #${number} already reports this plan."
+          else
+            gh issue comment "$number" --body-file body.md
+          fi
+
+      - name: Close resolved drift issue
+        if: github.event_name != 'pull_request' && steps.plan.outputs.drift == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FILE: ${{ matrix.file }}
+        run: |
+          set -euo pipefail
+          title="Drift: ${FILE}"
+          number=$(gh issue list --state open --label drift --limit 100 --json number,title \
+            --jq "map(select(.title == \"${title}\")) | .[0].number // empty" 2>/dev/null || true)
+          if [ -n "$number" ]; then
+            gh issue close "$number" --comment "\`${FILE}\` matches the chain again (${GITHUB_SHA::7})."
+          fi
