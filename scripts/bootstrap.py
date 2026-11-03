@@ -46,6 +46,28 @@ def header(t, chain_id):
     return "\n".join(lines) + "\n\n"
 
 
+LIST_LINE = re.compile(r"^(\s*)(\w+\s*=\s*)\[(.*)\]\s*$")
+SCALAR = re.compile(r'"0x[0-9a-fA-F]*"|-?\d+|true|false')
+
+
+def expand_lists(text):
+    """Put lists of more than 3 scalars one element per line, so a listing or
+    delisting later shows up as a one-line diff (scripts/rebaseline.py keeps
+    the same layout)."""
+    out = []
+    for line in text.splitlines():
+        m = LIST_LINE.match(line)
+        items = [s.strip() for s in m.group(3).split(",")] if m else []
+        if len(items) > 3 and all(SCALAR.fullmatch(s) for s in items):
+            indent = m.group(1)
+            out.append(f"{indent}{m.group(2)}[")
+            out += [f"{indent}  {s}," for s in items]
+            out.append(f"{indent}]")
+        else:
+            out.append(line)
+    return "\n".join(out) + "\n"
+
+
 def wrap(text, width):
     words, line, out = text.split(), "", []
     for w in words:
@@ -98,7 +120,7 @@ def main():
 
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w") as f:
-            f.write(header(t, chain_id) + r.stdout)
+            f.write(header(t, chain_id) + expand_lists(r.stdout))
 
         v = subprocess.run(["chainform", "validate", "-f", path], capture_output=True, text=True)
         if v.returncode != 0:

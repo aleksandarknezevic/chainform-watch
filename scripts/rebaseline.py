@@ -33,6 +33,15 @@ def render(value, abi_type):
     return s.replace("${", "$${").replace("%{", "%%{")
 
 
+def render_lines(value, abi_type, indent):
+    """Like render, but lists longer than 3 go one element per line, so a
+    listing or delisting shows up as a one-line diff."""
+    if abi_type.endswith("]") and isinstance(value, list) and len(value) > 3:
+        elem = abi_type[: abi_type.rindex("[")]
+        return ["["] + [f"{indent}  {render(v, elem)}," for v in value] + [f"{indent}]"]
+    return [render(value, abi_type)]
+
+
 def short(value):
     """Compact value for a social post: 0x1234…abcd for addresses and hashes."""
     s = show(value)
@@ -119,19 +128,33 @@ def rewrite(lines, assertion):
     if not expect:
         return "expect block not found"
 
-    line_re = re.compile(rf"^(\s*{attr}\s*=\s*)(.*?)(\r?\n?)$")
+    line_re = re.compile(rf"^((\s*){attr}\s*=\s*)(.*?)(\r?\n?)$")
     for i in range(expect[0] + 1, expect[1]):
         m = line_re.match(lines[i])
         if not m:
             continue
-        old, _ = split_comment(m.group(2))
-        if old.startswith("[") and not old.endswith("]"):
-            return "multi-line value, edit by hand"
-        new = render(assertion["actual"], assertion["type"])
-        lines[i] = (
-            f"{m.group(1)}{new} # was {old}; TODO: describe and link the proposal / tx"
-            f"{m.group(3)}"
-        )
+        old, _ = split_comment(m.group(3))
+
+        # A multi-line list runs until its brackets balance.
+        end = i
+        depth = old.count("[") - old.count("]")
+        while depth > 0:
+            end += 1
+            if end >= expect[1]:
+                return "unterminated list"
+            depth += split_comment(lines[end])[0].count("[") - split_comment(lines[end])[0].count("]")
+
+        expected, actual = assertion["expected"], assertion["actual"]
+        if isinstance(expected, list) and isinstance(actual, list):
+            change = post_line("changed", expected, actual)
+        else:
+            change = f"was {old}"
+        note = f" # {change}; TODO: describe and link the proposal / tx"
+
+        new = render_lines(actual, assertion["type"], m.group(2))
+        new[0] = f"{m.group(1)}{new[0]}{note}"
+        nl = m.group(4) or "\n"
+        lines[i : end + 1] = [n + nl for n in new]
         return None
     return "attribute not found in expect block"
 
