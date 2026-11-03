@@ -1,0 +1,11 @@
+[
+  { "type": "function", "name": "getMarketId", "inputs": [], "outputs": [{ "name": "", "type": "string" }], "stateMutability": "view" },
+  { "type": "function", "name": "owner", "inputs": [], "outputs": [{ "name": "", "type": "address" }], "stateMutability": "view" },
+  { "type": "function", "name": "getACLAdmin", "inputs": [], "outputs": [{ "name": "", "type": "address" }], "stateMutability": "view" },
+  { "type": "function", "name": "getACLManager", "inputs": [], "outputs": [{ "name": "", "type": "address" }], "stateMutability": "view" },
+  { "type": "function", "name": "getPool", "inputs": [], "outputs": [{ "name": "", "type": "address" }], "stateMutability": "view" },
+  { "type": "function", "name": "getPoolConfigurator", "inputs": [], "outputs": [{ "name": "", "type": "address" }], "stateMutability": "view" },
+  { "type": "function", "name": "getPriceOracle", "inputs": [], "outputs": [{ "name": "", "type": "address" }], "stateMutability": "view" },
+  { "type": "function", "name": "getPriceOracleSentinel", "inputs": [], "outputs": [{ "name": "", "type": "address" }], "stateMutability": "view" },
+  { "type": "function", "name": "getPoolDataProvider", "inputs": [], "outputs": [{ "name": "", "type": "address" }], "stateMutability": "view" }
+]

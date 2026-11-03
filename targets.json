@@ -1,0 +1,81 @@
+[
+  {
+    "file": "watch/aave-v3-addresses-provider.hcl",
+    "title": "Aave V3 PoolAddressesProvider (Ethereum)",
+    "tags": "#Aave #Ethereum #DeFi",
+    "address": "0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e",
+    "abi": "abis/aave-v3-addresses-provider.abi.json",
+    "note": "Registry of the Aave V3 Ethereum market: owner, ACL admin, and which Pool, PoolConfigurator and price oracle the market points to. A change here means an upgrade or a swap of core infrastructure.",
+    "source": "https://aave.com/docs/resources/addresses"
+  },
+  {
+    "file": "watch/aave-v3-pool.hcl",
+    "title": "Aave V3 Pool (Ethereum)",
+    "tags": "#Aave #Ethereum #DeFi",
+    "address": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+    "abi": "abis/aave-v3-pool.abi.json",
+    "note": "Listed reserves (getReservesList changes whenever governance lists a new asset) and the flash loan premium.",
+    "source": "https://aave.com/docs/resources/addresses"
+  },
+  {
+    "file": "watch/compound-v3-usdc.hcl",
+    "title": "Compound III cUSDCv3 (Ethereum)",
+    "tags": "#Compound #Ethereum #DeFi #USDC",
+    "address": "0xc3d688B66703497DAA19211EEdff47f25384cdc3",
+    "abi": "abis/compound-v3-comet.abi.json",
+    "note": "Governor, pause guardian, pause flags, number of collateral assets, and the interest rate curve (kinks and slopes). Rate parameters are retuned by governance every few weeks.",
+    "source": "https://docs.compound.finance/#networks"
+  },
+  {
+    "file": "watch/compound-v3-weth.hcl",
+    "title": "Compound III cWETHv3 (Ethereum)",
+    "tags": "#Compound #Ethereum #DeFi #WETH",
+    "address": "0xA17581A9E3356d9A858b789D68B4d866e593aE94",
+    "abi": "abis/compound-v3-comet.abi.json",
+    "note": "Governor, pause guardian, pause flags, number of collateral assets, and the interest rate curve (kinks and slopes). Rate parameters are retuned by governance every few weeks.",
+    "source": "https://docs.compound.finance/#networks"
+  },
+  {
+    "file": "watch/usdc.hcl",
+    "title": "USDC (Ethereum)",
+    "tags": "#USDC #Circle #Ethereum #Stablecoin",
+    "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "abi": "abis/usdc.abi.json",
+    "note": "Privileged roles of the USDC token: owner, master minter, pauser, blacklister, rescuer, and the global pause flag.",
+    "source": "https://developers.circle.com/stablecoins/usdc-contract-addresses"
+  },
+  {
+    "file": "watch/usdt.hcl",
+    "title": "USDT (Ethereum)",
+    "tags": "#USDT #Tether #Ethereum #Stablecoin",
+    "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    "abi": "abis/usdt.abi.json",
+    "note": "Owner, pause and deprecation flags (deprecated + upgradedAddress would redirect the token to a new contract), and the dormant transfer fee (basisPointsRate, maximumFee)."
+  },
+  {
+    "file": "watch/wbtc.hcl",
+    "title": "WBTC (Ethereum)",
+    "tags": "#WBTC #Bitcoin #Ethereum",
+    "address": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+    "abi": "abis/wbtc.abi.json",
+    "note": "Owner of the WBTC token (the custody controller) and the pause flag."
+  },
+  {
+    "file": "watch/chainlink-eth-usd.hcl",
+    "title": "Chainlink ETH / USD feed (Ethereum)",
+    "tags": "#Chainlink #Ethereum #Oracle",
+    "address": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
+    "abi": "abis/chainlink-feed-admin.abi.json",
+    "note": "Feed proxy owner and the aggregator it points to (changes when Chainlink upgrades the feed), plus metadata consumers hard-code.",
+    "source": "https://docs.chain.link/data-feeds/price-feeds/addresses?network=ethereum"
+  },
+  {
+    "file": "watch/chainlink-btc-usd.hcl",
+    "title": "Chainlink BTC / USD feed (Ethereum)",
+    "tags": "#Chainlink #Ethereum #Oracle #Bitcoin",
+    "address": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
+    "abi": "abis/chainlink-feed-admin.abi.json",
+    "note": "Feed proxy owner and the aggregator it points to (changes when Chainlink upgrades the feed), plus metadata consumers hard-code.",
+    "source": "https://docs.chain.link/data-feeds/price-feeds/addresses?network=ethereum"
+  }
+]

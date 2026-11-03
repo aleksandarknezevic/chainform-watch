@@ -1,0 +1,11 @@
+[
+  { "type": "function", "name": "name", "inputs": [], "outputs": [{ "name": "", "type": "string" }], "stateMutability": "view" },
+  { "type": "function", "name": "symbol", "inputs": [], "outputs": [{ "name": "", "type": "string" }], "stateMutability": "view" },
+  { "type": "function", "name": "decimals", "inputs": [], "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view" },
+  { "type": "function", "name": "owner", "inputs": [], "outputs": [{ "name": "", "type": "address" }], "stateMutability": "view" },
+  { "type": "function", "name": "paused", "inputs": [], "outputs": [{ "name": "", "type": "bool" }], "stateMutability": "view" },
+  { "type": "function", "name": "deprecated", "inputs": [], "outputs": [{ "name": "", "type": "bool" }], "stateMutability": "view" },
+  { "type": "function", "name": "upgradedAddress", "inputs": [], "outputs": [{ "name": "", "type": "address" }], "stateMutability": "view" },
+  { "type": "function", "name": "basisPointsRate", "inputs": [], "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view" },
+  { "type": "function", "name": "maximumFee", "inputs": [], "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view" }
+]

@@ -138,9 +138,13 @@ jobs:
           BASE: ${{ github.event.repository.default_branch }}
         run: |
           set -uo pipefail
-          branch="drift/$(basename "$FILE" .hcl)"
+          slug=${FILE#watch/}
+          slug=${slug%.hcl}
+          branch="drift/${slug//\//-}"
+          issue_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/issues/${ISSUE}"
 
-          python3 scripts/rebaseline.py --file "$FILE" --plan "$PLAN_JSON" --summary "$RUNNER_TEMP/changes.md"
+          python3 scripts/rebaseline.py --file "$FILE" --plan "$PLAN_JSON" \
+            --summary "$RUNNER_TEMP/changes.md" --post "$RUNNER_TEMP/post.txt" --link "$issue_url"
           rewrite=$?
           if [ "$rewrite" -eq 2 ]; then
             exit 2
@@ -182,6 +186,14 @@ jobs:
             echo
             echo "- [ ] The change is legitimate: it came from the expected owner/governance (find the transaction or event on the explorer)."
             echo "- [ ] Each \`TODO\` comment is replaced with what the new value is and a link to the proposal or transaction."
+            echo
+            echo "### Draft post for X"
+            echo
+            echo "Post only after the change is verified; add one line of context (what the new value means, link to the proposal)."
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/post.txt"
+            echo '```'
           } > "$RUNNER_TEMP/pr.md"
 
           pr=$(gh pr list --head "$branch" --state open --json number --jq '.[0].number // empty')
@@ -201,7 +213,9 @@ jobs:
         run: |
           set -euo pipefail
           title="Drift: ${FILE}"
-          branch="drift/$(basename "$FILE" .hcl)"
+          slug=${FILE#watch/}
+          slug=${slug%.hcl}
+          branch="drift/${slug//\//-}"
           number=$(gh issue list --state open --label drift --limit 100 --json number,title \
             --jq "map(select(.title == \"${title}\")) | .[0].number // empty" 2>/dev/null || true)
           if [ -n "$number" ]; then
