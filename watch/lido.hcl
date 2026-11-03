@@ -1,7 +1,9 @@
-# Lido — Ethereum mainnet
+# Lido stETH (Ethereum)
 #
 # stETH protocol fee and emergency stop flag. Both are governance-controlled:
 # a change here means a DAO vote (or an emergency action) went through.
+#
+# tags: #Lido #stETH #Ethereum #DeFi
 
 version = "1"
 

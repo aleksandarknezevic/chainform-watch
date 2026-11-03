@@ -1,4 +1,6 @@
-# Uniswap — Ethereum mainnet
+# Uniswap V3 Factory (Ethereum)
+#
+# tags: #Uniswap #Ethereum #DeFi
 #
 # Who owns the V3 Factory. The owner can enable new fee tiers and set protocol
 # fees. It used to be the Uniswap governance timelock

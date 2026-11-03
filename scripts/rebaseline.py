@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Rewrite failed `expect` values in a watch config to their on-chain values.
 
-    python3 scripts/rebaseline.py --file watch/x.hcl --plan plan.json [--summary changes.md]
+    python3 scripts/rebaseline.py --file watch/x.hcl --plan plan.json \
+        [--summary changes.md] [--post post.txt --link URL]
 
 Reads the JSON plan (`chainform plan --json`), and for every failed assertion
 replaces the value in the matching `expect` block in place. Comments and
@@ -30,6 +31,41 @@ def render(value, abi_type):
     s = json.dumps(str(value))
     # HCL template sequences inside quoted strings.
     return s.replace("${", "$${").replace("%{", "%%{")
+
+
+def short(value):
+    """Compact value for a social post: 0x1234…abcd for addresses and hashes."""
+    s = show(value)
+    if re.fullmatch(r"0x[0-9a-fA-F]{40,}", s):
+        return f"{s[:6]}…{s[-4:]}"
+    return s if len(s) <= 40 else s[:37] + "…"
+
+
+def post_line(attr, expected, actual):
+    if isinstance(expected, list) and isinstance(actual, list):
+        added = [short(v) for v in actual if v not in expected]
+        removed = [short(v) for v in expected if v not in actual]
+        parts = [f"+{v}" for v in added] + [f"−{v}" for v in removed]
+        return f"{attr}: " + (", ".join(parts) if parts else "reordered")
+    return f"{attr}: {short(expected)} → {short(actual)}"
+
+
+def draft_post(lines, failed, link):
+    """Draft an X post from the file header (`# <title>`, `# tags: ...`)."""
+    title, tags = "", ""
+    for line in lines:
+        if not line.startswith("#"):
+            break
+        text = line.lstrip("#").strip()
+        if not title and text:
+            title = text
+        if text.startswith("tags:"):
+            tags = text[len("tags:"):].strip()
+    body = [post_line(a["attr"], a["expected"], a["actual"]) for a in failed[:3]]
+    if len(failed) > 3:
+        body.append(f"+{len(failed) - 3} more")
+    parts = [f"🔔 On-chain change: {title}", "", *body, "", tags, link]
+    return "\n".join(p for p in parts if p is not None).strip() + "\n"
 
 
 def show(value):
@@ -105,6 +141,8 @@ def main():
     ap.add_argument("--file", required=True)
     ap.add_argument("--plan", required=True)
     ap.add_argument("--summary")
+    ap.add_argument("--post", help="write a draft X post here")
+    ap.add_argument("--link", default="", help="URL to put in the post")
     args = ap.parse_args()
 
     try:
@@ -115,6 +153,11 @@ def main():
     except (OSError, json.JSONDecodeError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
+
+    if args.post:
+        failed = [a for a in plan.get("assertions", []) if not a.get("satisfied")]
+        with open(args.post, "w") as f:
+            f.write(draft_post(lines, failed, args.link))
 
     changed, skipped = [], []
     for a in plan.get("assertions", []):

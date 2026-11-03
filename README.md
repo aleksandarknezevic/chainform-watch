@@ -15,9 +15,19 @@ state. It performs **read-only `eth_call`s only**. No keys, no transactions.
 
 | Protocol | Contract | Watched values | Config |
 | --- | --- | --- | --- |
+| Aave | [V3 PoolAddressesProvider](https://etherscan.io/address/0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e) | owner, ACL admin, Pool / Configurator / oracle pointers | [watch/aave-v3-addresses-provider.hcl](watch/aave-v3-addresses-provider.hcl) |
+| Aave | [V3 Pool](https://etherscan.io/address/0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2) | listed reserves, flash loan premium | [watch/aave-v3-pool.hcl](watch/aave-v3-pool.hcl) |
+| Compound | [cUSDCv3](https://etherscan.io/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3) | governor, pause guardian & flags, interest rate curve | [watch/compound-v3-usdc.hcl](watch/compound-v3-usdc.hcl) |
+| Compound | [cWETHv3](https://etherscan.io/address/0xA17581A9E3356d9A858b789D68B4d866e593aE94) | governor, pause guardian & flags, interest rate curve | [watch/compound-v3-weth.hcl](watch/compound-v3-weth.hcl) |
 | Lido | [stETH](https://etherscan.io/address/0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84) | protocol fee, emergency stop, token metadata | [watch/lido.hcl](watch/lido.hcl) |
-| Chainlink | [ETH / USD feed](https://etherscan.io/address/0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419) | description, decimals, version | [watch/chainlink.hcl](watch/chainlink.hcl) |
-| Uniswap | [V3 Factory](https://etherscan.io/address/0x1F98431c8aD98523631AE4a59f267346ea31F984) | owner (governance timelock) | [watch/uniswap.hcl](watch/uniswap.hcl) |
+| Uniswap | [V3 Factory](https://etherscan.io/address/0x1F98431c8aD98523631AE4a59f267346ea31F984) | owner | [watch/uniswap.hcl](watch/uniswap.hcl) |
+| Chainlink | [ETH / USD feed](https://etherscan.io/address/0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419) | owner, aggregator, metadata | [watch/chainlink-eth-usd.hcl](watch/chainlink-eth-usd.hcl) |
+| Chainlink | [BTC / USD feed](https://etherscan.io/address/0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c) | owner, aggregator, metadata | [watch/chainlink-btc-usd.hcl](watch/chainlink-btc-usd.hcl) |
+| Circle | [USDC](https://etherscan.io/address/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48) | owner, master minter, pauser, blacklister, rescuer, paused | [watch/usdc.hcl](watch/usdc.hcl) |
+| Tether | [USDT](https://etherscan.io/address/0xdAC17F958D2ee523a2206206994597C13D831ec7) | owner, paused, deprecation, transfer fee | [watch/usdt.hcl](watch/usdt.hcl) |
+| BitGo / BiT Global | [WBTC](https://etherscan.io/address/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599) | owner, paused | [watch/wbtc.hcl](watch/wbtc.hcl) |
+
+Rows whose config file is missing are waiting for their bootstrap PR.
 
 ## How it works
 
@@ -53,18 +63,23 @@ PRs are welcome. Prefer values whose change matters to users: owners, admins,
 fees, pause or stop flags, oracle and implementation pointers. Skip values
 that change on their own (prices, supplies, timestamps).
 
-1. Put a trimmed ABI (view functions you watch) in [`abis/`](abis/).
-2. Snapshot the live values:
+Values are never typed by hand. They are snapshotted from the chain, so a new
+config starts with no drift.
 
-   ```bash
-   export RPC_URL=https://your-mainnet-rpc.example
-   scripts/import.sh aaveV3Pool 0x... abis/aave-v3-pool.abi.json
-   ```
+1. Add an ABI to [`abis/`](abis/) that lists **only the view functions you
+   want watched**. Without setters, every value becomes a read-only `expect`
+   assertion.
+2. Add an entry to [`targets.json`](targets.json): `file`, `title`, `tags`
+   (the hashtags used in post drafts), `address`, `abi`, `note`, optional
+   `source`.
+3. Merge it. The [`bootstrap`](.github/workflows/bootstrap.yml) workflow runs
+   `chainform import` for every target without a config and opens a PR with the
+   generated files. A target that fails to import is listed in the PR, and the
+   others still go in.
+4. Check the PR, add a row to the table above, and merge.
 
-3. Edit the generated `watch/<name>.hcl`. Move everything into `expect`,
-   delete volatile values, and add an explorer link for every address.
-4. Add a row to the table above and open a PR. CI runs the same plan against
-   mainnet.
+To snapshot locally instead, run
+`RPC_URL=... python3 scripts/bootstrap.py`.
 
 Install ChainForm with
 `go install github.com/aleksandarknezevic/chainform/cmd/chainform@latest` or

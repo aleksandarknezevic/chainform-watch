@@ -1,0 +1,20 @@
+[
+  { "type": "function", "name": "governor", "inputs": [], "outputs": [{ "name": "", "type": "address" }], "stateMutability": "view" },
+  { "type": "function", "name": "pauseGuardian", "inputs": [], "outputs": [{ "name": "", "type": "address" }], "stateMutability": "view" },
+  { "type": "function", "name": "baseToken", "inputs": [], "outputs": [{ "name": "", "type": "address" }], "stateMutability": "view" },
+  { "type": "function", "name": "numAssets", "inputs": [], "outputs": [{ "name": "", "type": "uint8" }], "stateMutability": "view" },
+  { "type": "function", "name": "supplyKink", "inputs": [], "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view" },
+  { "type": "function", "name": "supplyPerSecondInterestRateBase", "inputs": [], "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view" },
+  { "type": "function", "name": "supplyPerSecondInterestRateSlopeLow", "inputs": [], "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view" },
+  { "type": "function", "name": "supplyPerSecondInterestRateSlopeHigh", "inputs": [], "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view" },
+  { "type": "function", "name": "borrowKink", "inputs": [], "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view" },
+  { "type": "function", "name": "borrowPerSecondInterestRateBase", "inputs": [], "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view" },
+  { "type": "function", "name": "borrowPerSecondInterestRateSlopeLow", "inputs": [], "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view" },
+  { "type": "function", "name": "borrowPerSecondInterestRateSlopeHigh", "inputs": [], "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view" },
+  { "type": "function", "name": "storeFrontPriceFactor", "inputs": [], "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view" },
+  { "type": "function", "name": "isSupplyPaused", "inputs": [], "outputs": [{ "name": "", "type": "bool" }], "stateMutability": "view" },
+  { "type": "function", "name": "isTransferPaused", "inputs": [], "outputs": [{ "name": "", "type": "bool" }], "stateMutability": "view" },
+  { "type": "function", "name": "isWithdrawPaused", "inputs": [], "outputs": [{ "name": "", "type": "bool" }], "stateMutability": "view" },
+  { "type": "function", "name": "isAbsorbPaused", "inputs": [], "outputs": [{ "name": "", "type": "bool" }], "stateMutability": "view" },
+  { "type": "function", "name": "isBuyPaused", "inputs": [], "outputs": [{ "name": "", "type": "bool" }], "stateMutability": "view" }
+]

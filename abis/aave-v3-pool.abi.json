@@ -1,0 +1,5 @@
+[
+  { "type": "function", "name": "ADDRESSES_PROVIDER", "inputs": [], "outputs": [{ "name": "", "type": "address" }], "stateMutability": "view" },
+  { "type": "function", "name": "getReservesList", "inputs": [], "outputs": [{ "name": "", "type": "address[]" }], "stateMutability": "view" },
+  { "type": "function", "name": "FLASHLOAN_PREMIUM_TOTAL", "inputs": [], "outputs": [{ "name": "", "type": "uint128" }], "stateMutability": "view" }
+]

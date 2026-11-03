@@ -1,0 +1,104 @@
+# Creates watch configs for new targets.json entries from the live chain and
+# opens a PR with them. Baselines are always snapshotted with `chainform import`,
+# never typed by hand, so a new config starts with no drift.
+#
+# Runs when targets.json or abis/ change on main, or manually.
+# Same secrets as watch.yml: RPC_URL, optional WATCH_TOKEN.
+
+name: bootstrap
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - targets.json
+      - abis/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bootstrap
+  cancel-in-progress: false
+
+env:
+  CHAINFORM_VERSION: v0.0.3
+
+jobs:
+  bootstrap:
+    name: Bootstrap new targets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ secrets.WATCH_TOKEN || github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.WATCH_TOKEN || github.token }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Install ChainForm
+        run: |
+          go install "github.com/aleksandarknezevic/chainform/cmd/chainform@${CHAINFORM_VERSION}"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Import new targets
+        env:
+          RPC_URL: ${{ secrets.RPC_URL }}
+        run: |
+          set +e
+          python3 scripts/bootstrap.py --summary "$RUNNER_TEMP/summary.md"
+          code=$?
+          set -e
+          cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          # 3 = some targets failed; the rest still go into the PR.
+          if [ "$code" -ne 0 ] && [ "$code" -ne 3 ]; then
+            exit "$code"
+          fi
+
+      - name: Open or update bootstrap PR
+        env:
+          BASE: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain watch/)" ]; then
+            echo "No new configs."
+            exit 0
+          fi
+
+          branch="bootstrap/targets"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add watch/
+          git commit -m "Bootstrap new watch targets"
+          git push --force origin "$branch"
+
+          {
+            cat "$RUNNER_TEMP/summary.md"
+            echo
+            echo "Values were read from the chain by \`chainform import\` in [run ${GITHUB_RUN_ID}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})."
+            echo
+            echo "### Before merging"
+            echo
+            echo "- [ ] Every address is the contract it claims to be (check the explorer link in each file header)."
+            echo "- [ ] Remove values that change on their own, if any slipped in."
+            echo "- [ ] Add a row per contract to the table in README.md."
+          } > "$RUNNER_TEMP/pr.md"
+
+          pr=$(gh pr list --head "$branch" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$pr" ]; then
+            gh pr edit "$pr" --body-file "$RUNNER_TEMP/pr.md"
+          else
+            gh pr create --base "$BASE" --head "$branch" \
+              --title "Bootstrap new watch targets" --body-file "$RUNNER_TEMP/pr.md"
+          fi
