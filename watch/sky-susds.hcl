@@ -24,7 +24,7 @@ resource "contract" "skySusds" {
   abi     = "abis/sky-susds.abi.json"
 
   expect {
-    ssr    = 1000000001182641576793209935
+    ssr    = 1000000001182641576793209935 # was 1000000001182641576793209935; TODO: describe and link the proposal / tx
     symbol = "sUSDS"
   }
 }
