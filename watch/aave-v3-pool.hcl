@@ -24,7 +24,7 @@ resource "contract" "aaveV3Pool" {
   expect {
     ADDRESSES_PROVIDER      = "0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e"
     FLASHLOAN_PREMIUM_TOTAL = 5
-    getReservesList         = [
+    getReservesList         = [ # changed: +0x72DF…075E; TODO: describe and link the proposal / tx
       "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
       "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
       "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
@@ -92,6 +92,7 @@ resource "contract" "aaveV3Pool" {
       "0x619D75E3b790eBC21c289f2805Bb7177A7D732E2",
       "0x9db38D74a0D29380899aD354121DfB521aDb0548",
       "0x59bC9FaE5D62B19d4f8d07D758047aCb9EE19d34",
+      "0x72DFB2E44f59C5AD2bAFE84314E5b99a7cd5075E",
     ]
   }
 }
