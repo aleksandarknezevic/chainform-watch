@@ -23,7 +23,7 @@ resource "contract" "makerPot" {
   abi     = "abis/maker-pot.abi.json"
 
   expect {
-    dsr  = 1000000000393915525145987602
+    dsr  = 1000000000393915525145987602 # was 1000000000393915525145987602; TODO: describe and link the proposal / tx
     live = 1
   }
 }
