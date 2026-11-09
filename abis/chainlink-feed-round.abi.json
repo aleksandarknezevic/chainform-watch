@@ -1,0 +1,4 @@
+[
+  { "type": "function", "name": "description", "inputs": [], "outputs": [{ "name": "", "type": "string" }], "stateMutability": "view" },
+  { "type": "function", "name": "latestRound", "inputs": [], "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view" }
+]

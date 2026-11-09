@@ -19,6 +19,12 @@ state. It performs **read-only `eth_call`s only**. No keys, no transactions.
 | Aave | [V3 Pool](https://etherscan.io/address/0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2) | listed reserves, flash loan premium | [watch/aave-v3-pool.hcl](watch/aave-v3-pool.hcl) |
 | Compound | [cUSDCv3](https://etherscan.io/address/0xc3d688B66703497DAA19211EEdff47f25384cdc3) | governor, pause guardian & flags, interest rate curve | [watch/compound-v3-usdc.hcl](watch/compound-v3-usdc.hcl) |
 | Compound | [cWETHv3](https://etherscan.io/address/0xA17581A9E3356d9A858b789D68B4d866e593aE94) | governor, pause guardian & flags, interest rate curve | [watch/compound-v3-weth.hcl](watch/compound-v3-weth.hcl) |
+| Compound | [cUSDTv3](https://etherscan.io/address/0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840) | governor, pause guardian & flags, collateral count, interest rate curve | [watch/compound-v3-usdt.hcl](watch/compound-v3-usdt.hcl) |
+| Compound | [cwstETHv3](https://etherscan.io/address/0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3) | governor, pause guardian & flags, collateral count, interest rate curve | [watch/compound-v3-wsteth.hcl](watch/compound-v3-wsteth.hcl) |
+| Compound | [cUSDSv3](https://etherscan.io/address/0x5D409e56D886231aDAf00c8775665AD0f9897b56) | governor, pause guardian & flags, collateral count, interest rate curve | [watch/compound-v3-usds.hcl](watch/compound-v3-usds.hcl) |
+| Sky | [sUSDS](https://etherscan.io/address/0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD) | Sky Savings Rate (ssr) | [watch/sky-susds.hcl](watch/sky-susds.hcl) |
+| Maker / Sky | [Pot](https://etherscan.io/address/0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7) | DAI Savings Rate (dsr), live flag | [watch/maker-pot.hcl](watch/maker-pot.hcl) |
+| Spark | [SparkLend Pool](https://etherscan.io/address/0xC13e21B648A5Ee794902342038FF3aDAB66BE987) | listed reserves, flash loan premium | [watch/spark-pool.hcl](watch/spark-pool.hcl) |
 | Lido | [stETH](https://etherscan.io/address/0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84) | protocol fee, emergency stop, token metadata | [watch/lido.hcl](watch/lido.hcl) |
 | Uniswap | [V3 Factory](https://etherscan.io/address/0x1F98431c8aD98523631AE4a59f267346ea31F984) | owner | [watch/uniswap.hcl](watch/uniswap.hcl) |
 | Chainlink | [ETH / USD feed](https://etherscan.io/address/0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419) | owner, aggregator, metadata | [watch/chainlink-eth-usd.hcl](watch/chainlink-eth-usd.hcl) |
@@ -28,6 +34,11 @@ state. It performs **read-only `eth_call`s only**. No keys, no transactions.
 | BitGo / BiT Global | [WBTC](https://etherscan.io/address/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599) | owner, paused | [watch/wbtc.hcl](watch/wbtc.hcl) |
 
 Rows whose config file is missing are waiting for their bootstrap PR.
+
+`watch/canary-*.hcl` files are **canaries**, not findings: they watch a
+value that changes on purpose (the Chainlink USDC / USD round advances at least
+daily), so the issue → PR → merge loop runs regularly. A canary that has not
+drifted for two days means the watch is broken (RPC, Actions, schedule).
 
 ## How it works
 

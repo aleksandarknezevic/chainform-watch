@@ -77,5 +77,68 @@
     "abi": "abis/chainlink-feed-admin.abi.json",
     "note": "Feed proxy owner and the aggregator it points to (changes when Chainlink upgrades the feed), plus metadata consumers hard-code.",
     "source": "https://docs.chain.link/data-feeds/price-feeds/addresses?network=ethereum"
+  },
+  {
+    "file": "watch/sky-susds.hcl",
+    "title": "Sky Savings Rate - sUSDS (Ethereum)",
+    "tags": "#Sky #USDS #Ethereum #DeFi #Stablecoin",
+    "address": "0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD",
+    "abi": "abis/sky-susds.abi.json",
+    "note": "The Sky Savings Rate (ssr, a per-second rate in ray, 1e27) paid to USDS savers. Set by Sky governance executive votes and adjusted every few weeks to months. APY = (ssr / 1e27) ^ 31536000 - 1. chi/rho are left out: they move on every deposit.",
+    "source": "https://developers.sky.money/"
+  },
+  {
+    "file": "watch/maker-pot.hcl",
+    "title": "Maker DAI Savings Rate - Pot (Ethereum)",
+    "tags": "#MakerDAO #Sky #DAI #Ethereum #DeFi",
+    "address": "0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7",
+    "abi": "abis/maker-pot.abi.json",
+    "note": "The DAI Savings Rate (dsr, per-second rate in ray, 1e27) behind sDAI, and the live flag (0 after emergency shutdown). Changed by executive spells. APY = (dsr / 1e27) ^ 31536000 - 1.",
+    "source": "https://chainlog.sky.money/"
+  },
+  {
+    "file": "watch/spark-pool.hcl",
+    "title": "SparkLend Pool (Ethereum)",
+    "tags": "#Spark #SparkLend #Sky #Ethereum #DeFi",
+    "address": "0xC13e21B648A5Ee794902342038FF3aDAB66BE987",
+    "abi": "abis/aave-v3-pool.abi.json",
+    "note": "Listed reserves of SparkLend (an Aave V3 fork run by Sky governance) and the flash loan premium. New assets are onboarded regularly.",
+    "source": "https://docs.spark.fi/"
+  },
+  {
+    "file": "watch/compound-v3-usdt.hcl",
+    "title": "Compound III cUSDTv3 (Ethereum)",
+    "tags": "#Compound #Ethereum #DeFi #USDT",
+    "address": "0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840",
+    "abi": "abis/compound-v3-comet.abi.json",
+    "note": "Governor, pause guardian, pause flags, number of collateral assets (grows when collateral is onboarded), and the interest rate curve. Rate parameters are retuned by governance every few weeks.",
+    "source": "https://docs.compound.finance/#networks"
+  },
+  {
+    "file": "watch/compound-v3-wsteth.hcl",
+    "title": "Compound III cwstETHv3 (Ethereum)",
+    "tags": "#Compound #Lido #wstETH #Ethereum #DeFi",
+    "address": "0x3D0bb1ccaB520A66e607822fC55BC921738fAFE3",
+    "abi": "abis/compound-v3-comet.abi.json",
+    "note": "Governor, pause guardian, pause flags, number of collateral assets (grows when collateral is onboarded), and the interest rate curve. Rate parameters are retuned by governance every few weeks.",
+    "source": "https://docs.compound.finance/#networks"
+  },
+  {
+    "file": "watch/compound-v3-usds.hcl",
+    "title": "Compound III cUSDSv3 (Ethereum)",
+    "tags": "#Compound #Sky #USDS #Ethereum #DeFi",
+    "address": "0x5D409e56D886231aDAf00c8775665AD0f9897b56",
+    "abi": "abis/compound-v3-comet.abi.json",
+    "note": "Governor, pause guardian, pause flags, number of collateral assets (grows when collateral is onboarded), and the interest rate curve. Rate parameters are retuned by governance every few weeks.",
+    "source": "https://docs.compound.finance/#networks"
+  },
+  {
+    "file": "watch/canary-chainlink-usdc-usd.hcl",
+    "title": "Canary: Chainlink USDC / USD round (Ethereum)",
+    "tags": "",
+    "address": "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6",
+    "abi": "abis/chainlink-feed-round.abi.json",
+    "note": "CANARY - not a real finding, never post it. latestRound advances at least once a day (24h heartbeat), so this file drifts daily and exercises the whole issue -> PR -> merge loop. If it has not drifted for two days, the watch itself is broken. Delete it once the loop is trusted.",
+    "source": "https://docs.chain.link/data-feeds/price-feeds/addresses?network=ethereum"
   }
 ]
