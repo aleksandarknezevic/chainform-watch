@@ -51,14 +51,36 @@ jobs:
     timeout-minutes: 5
     outputs:
       files: ${{ steps.find.outputs.files }}
+      changed: ${{ steps.changed.outputs.files }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # On pull_request HEAD is the merge commit; HEAD^1 is the base.
+          fetch-depth: 2
 
       - id: find
         run: |
           files=$(find watch -name '*.hcl' | sort | jq -R -s -c 'split("\n") | map(select(length > 0))')
           echo "files=${files}" >> "$GITHUB_OUTPUT"
           echo "Watching: ${files}"
+
+      # Configs a PR touches, directly or through an ABI they use. Only these
+      # fail the PR on drift: drift elsewhere is the chain moving, which the
+      # scheduled run reports as an issue + PR, and must not block unrelated PRs.
+      - id: changed
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          diff=$(git diff --name-only HEAD^1 HEAD)
+          {
+            echo "$diff" | grep -E '^watch/.*\.hcl$' || true
+            for abi in $(echo "$diff" | grep -E '^abis/' || true); do
+              grep -lF "\"${abi}\"" watch/*.hcl 2>/dev/null || true
+            done
+          } | sort -u | while read -r f; do [ -e "$f" ] && echo "$f"; done > changed.txt
+          files=$(jq -R -s -c 'split("\n") | map(select(length > 0))' < changed.txt)
+          echo "files=${files}" >> "$GITHUB_OUTPUT"
+          echo "Changed by this PR: ${files}"
 
   plan:
     name: ${{ matrix.file }}
@@ -91,7 +113,8 @@ jobs:
           version: ${{ env.CHAINFORM_VERSION }}
           json: "true"
           # Outside PRs drift is reported as an issue + PR, not a red build.
-          fail-on-drift: ${{ github.event_name == 'pull_request' }}
+          # In a PR only the configs it changes must match the chain.
+          fail-on-drift: ${{ github.event_name == 'pull_request' && contains(fromJSON(needs.discover.outputs.changed || '[]'), matrix.file) }}
 
       - name: Open or update drift issue
         id: issue
