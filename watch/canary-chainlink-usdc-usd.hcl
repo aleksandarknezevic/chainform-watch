@@ -25,6 +25,6 @@ resource "contract" "canaryChainlinkUsdcUsd" {
 
   expect {
     description = "USDC / USD"
-    latestRound = 73786976294838206523
+    latestRound = 73786976294838206528 # was 73786976294838206523; TODO: describe and link the proposal / tx
   }
 }
